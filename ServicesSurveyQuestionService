@@ -1,0 +1,95 @@
+using Sabio.Data;
+using Sabio.Web.Domain;
+using Sabio.Web.Models.Requests;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Web;
+
+namespace Sabio.Web.Services
+{
+    public class SurveyQuestionService : BaseService, ISurveyQuestionService
+    {
+
+        public int Insert(SurveyQuestionAddRequest model)
+        {
+            int id = 0;
+
+            DataProvider.ExecuteNonQuery(GetConnection, "dbo.SurveyQuestions_Insert"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection)
+               {
+                   paramCollection.AddWithValue("@UserId", UserService.GetCurrentUserId());
+                   paramCollection.AddWithValue("@SurveyId", model.SurveyId);
+                   paramCollection.AddWithValue("@QuestionText", model.QuestionText);
+                   paramCollection.AddWithValue("@QuestionFormatId", model.QuestionFormatId);
+
+                   SqlParameter p = new SqlParameter("@Id", System.Data.SqlDbType.Int);
+                   p.Direction = System.Data.ParameterDirection.Output;
+
+                   paramCollection.Add(p);
+
+               }, returnParameters: delegate (SqlParameterCollection param)
+               {
+
+                   int.TryParse(param["@Id"].Value.ToString(), out id);
+               }
+               );
+
+            return id;
+        }
+
+        public void Update(SurveyQuestionUpdateRequest model)
+        {
+            DataProvider.ExecuteNonQuery(GetConnection, "dbo.SurveyQuestions_Update"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection)
+               {
+                   paramCollection.AddWithValue("@Id", model.Id);
+                   paramCollection.AddWithValue("@SurveyId", model.SurveyId);
+                   paramCollection.AddWithValue("@QuestionText", model.QuestionText);
+                   paramCollection.AddWithValue("@QuestionFormatId", model.QuestionFormatId);
+               }
+               );
+        }
+
+        public SurveyQuestion SelectById(int id)
+        {
+            SurveyQuestion p = null;
+
+            DataProvider.ExecuteCmd(GetConnection, "dbo.SurveyQuestions_SelectById"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection)
+               {
+                   paramCollection.AddWithValue("@Id", id);
+               }
+               , map: delegate (IDataReader reader, short set)
+               {
+                   p = new SurveyQuestion();
+
+                   int index = 0;
+
+                   p.Id = reader.GetSafeInt32(index++);
+                   p.SurveyId = reader.GetSafeInt32(index++);
+                   p.QuestionText = reader.GetSafeString(index++);
+                   p.QuestionFormatId = reader.GetSafeInt32(index++);
+                   
+               }
+               );
+
+            return p;
+        }
+
+        public void Delete(int id)
+        {
+            DataProvider.ExecuteNonQuery(GetConnection, "dbo.SurveyQuestions_Delete"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection)
+               {
+                   paramCollection.AddWithValue("@Id", id);
+               }
+               );
+
+        }
+
+
+    }
+}
