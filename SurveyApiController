@@ -1,0 +1,111 @@
+using Sabio.Web.Domain;
+using Sabio.Web.Models.Requests;
+using Sabio.Web.Models.Responses;
+using Sabio.Web.Services;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+namespace Sabio.Web.Controllers.Api
+{
+    [RoutePrefix("api/surveys")]
+    public class SurveyApiController : ApiController
+    {
+
+        private ISurveyService _surveyService;
+
+        public SurveyApiController(ISurveyService surveyService)
+        {
+            _surveyService = surveyService;
+        }
+
+        [Route(), HttpPost]
+        public HttpResponseMessage Insert(SurveyAddRequest model)
+        {
+
+            if (ModelState.IsValid)
+            {
+                int id = _surveyService.Insert(model);
+                ItemResponse<int> response = new ItemResponse<int>();
+                response.Item = id;
+                return Request.CreateResponse(response);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+        [Route("{id:int}"), HttpPut]
+        public HttpResponseMessage Update(SurveyUpdateRequest model, int id)
+        {
+
+            if (ModelState.IsValid)
+            {
+                _surveyService.Update(model);
+                return Request.CreateResponse(new SuccessResponse());
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+        [Route("{id:int}"), HttpDelete]
+        public HttpResponseMessage Delete(int id)
+        {
+
+            if (ModelState.IsValid)
+            {
+                _surveyService.Delete(id);
+                return Request.CreateResponse(new SuccessResponse());
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+        [Route("{id:int}"), HttpGet]
+        public HttpResponseMessage SelectById(int id)
+        {
+
+            if (ModelState.IsValid)
+            {
+                Survey a = _surveyService.SelectById(id);
+                ItemResponse<Survey> response = new ItemResponse<Survey>();
+                response.Item = a;
+                return Request.CreateResponse(response);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+        [Route(), HttpGet]
+        public HttpResponseMessage SelectAll()
+        {
+
+            if (ModelState.IsValid)
+            {
+                List<Survey> a = _surveyService.SelectAll();
+                ItemsResponse<Survey> response = new ItemsResponse<Survey>();
+                response.Items = a;
+                return Request.CreateResponse(response);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+       
+    }
+}
