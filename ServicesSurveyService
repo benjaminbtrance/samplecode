@@ -1,0 +1,212 @@
+using Sabio.Data;
+using Sabio.Web.Domain;
+using Sabio.Web.Enums;
+using Sabio.Web.Models.Requests;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Web;
+
+namespace Sabio.Web.Services
+{
+    public class SurveyService : BaseService, ISurveyService
+    {
+
+        public int Insert(SurveyAddRequest model)
+        {
+
+            int id = 0;
+
+            DataProvider.ExecuteNonQuery(GetConnection, "dbo.Surveys_Insert"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection)
+               {
+
+                   paramCollection.AddWithValue("@UserId", UserService.GetCurrentUserId());
+                   paramCollection.AddWithValue("@Title", model.Title);
+                   paramCollection.AddWithValue("@StatusId", model.StatusId);
+
+                   SqlParameter p = new SqlParameter("@Id", System.Data.SqlDbType.Int);
+                   p.Direction = System.Data.ParameterDirection.Output;
+
+                   paramCollection.Add(p);
+
+               }, returnParameters: delegate (SqlParameterCollection param)
+               {
+
+                   int.TryParse(param["@Id"].Value.ToString(), out id);
+
+               }
+               );
+
+            return id;
+
+        }
+
+        public void Update(SurveyUpdateRequest model)
+        {
+
+            DataProvider.ExecuteNonQuery(GetConnection, "dbo.Surveys_Update"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection)
+               {
+
+                   paramCollection.AddWithValue("@Id", model.Id);
+                   paramCollection.AddWithValue("@Title", model.Title);
+                   paramCollection.AddWithValue("@StatusId", model.StatusId);
+
+               }
+               );
+
+        }
+
+        public void Delete(int id)
+        {
+
+            DataProvider.ExecuteNonQuery(GetConnection, "dbo.Surveys_Delete"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection)
+               {
+
+                   paramCollection.AddWithValue("@Id", id);
+
+               }
+               );
+
+        }
+
+        public Survey SelectById(int id)
+        {
+
+            Survey survey = null;
+
+            DataProvider.ExecuteCmd(GetConnection, "dbo.Surveys_SelectById"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection)
+               {
+
+                   paramCollection.AddWithValue("@Id", id);
+
+               }
+               , map: delegate (IDataReader reader, short set)
+               {
+
+                   switch (set)
+                   {
+                       case 0:
+                           {
+                               survey = MapSurvey(reader);
+                               break;
+                           }
+                       case 1:
+                           {
+                               SurveyQuestion question = NewMethod(reader);
+
+                               if (survey.Questions == null)
+                               {
+                                   survey.Questions = new List<SurveyQuestion>();
+                               }
+
+                               survey.Questions.Add(question);
+                               break;
+                           }
+
+                   }
+
+               }
+               );
+
+            return survey;
+
+        }
+
+        public List<Survey> SelectAll()
+        {
+
+            List<Survey> list = null;
+            Dictionary<int, Survey> dictionary = null;
+
+            DataProvider.ExecuteCmd(GetConnection, "dbo.Surveys_SelectAll"
+               , inputParamMapper: delegate (SqlParameterCollection paramCollection) { }
+               , map: delegate (IDataReader reader, short set)
+               {
+
+                   switch (set)
+                   {
+                       case 0:
+                           {
+                               Survey survey = MapSurvey(reader);
+
+                               if (list == null)
+                               {
+                                   list = new List<Survey>();
+                               }
+
+                               list.Add(survey);
+
+                               if (dictionary == null)
+                               {
+                                   dictionary = new Dictionary<int, Survey>();
+                               }
+
+                               dictionary.Add(survey.Id, survey);
+                               break;
+                           }
+                       case 1:
+                           {
+                               SurveyQuestion question = NewMethod(reader);
+
+                               if (dictionary.ContainsKey(question.SurveyId))
+                               {
+                                   Survey parent = dictionary[question.SurveyId];
+                                   if (parent.Questions == null)
+                                   {
+                                       parent.Questions = new List<SurveyQuestion>();
+
+                                   }
+
+                                   parent.Questions.Add(question);
+
+                               }
+                               break;
+                           }
+
+                   }
+
+               }
+               );
+
+            return list;
+
+        }
+
+        private Survey MapSurvey(IDataReader reader)
+        {
+
+            Survey survey = new Survey();
+            int index = 0;
+
+            survey.Id = reader.GetSafeInt32(index++);
+            survey.Title = reader.GetSafeString(index++);
+            survey.StatusId = reader.GetSafeInt32(index++);
+            survey.StatusName = ((SurveyStatus)survey.StatusId).ToString();
+            return survey;
+
+        }
+
+        private SurveyQuestion NewMethod(IDataReader reader)
+        {
+
+            var question = new SurveyQuestion();
+
+            int index = 0;
+
+            question.Id = reader.GetSafeInt32(index++);
+            question.SurveyId = reader.GetSafeInt32(index++);
+            question.QuestionText = reader.GetSafeString(index++);
+            question.QuestionFormatId = reader.GetSafeInt32(index++);
+            return question;
+
+        }
+
+
+    }
+}
