@@ -1,0 +1,95 @@
+using Sabio.Web.Domain;
+using Sabio.Web.Models.Requests;
+using Sabio.Web.Models.Responses;
+using Sabio.Web.Models.ViewModels;
+using Sabio.Web.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+namespace Sabio.Web.Controllers.Api
+{
+    [RoutePrefix("api/surveyquestions")]
+    public class SurveyQuestionController : ApiController
+    {
+
+        private ISurveyQuestionService _surveyQuestion;
+
+        public SurveyQuestionController(ISurveyQuestionService surveyQuestion)
+        {
+            _surveyQuestion = surveyQuestion;
+        }
+
+        [Route(), HttpPost]
+        public HttpResponseMessage Insert(SurveyQuestionAddRequest model)
+        {
+
+            if (ModelState.IsValid)
+            {
+                int id = _surveyQuestion.Insert(model);
+                ItemResponse<int> response = new ItemResponse<int>();
+                response.Item = id;
+                return Request.CreateResponse(response);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+        [Route("{id:int}"), HttpPut]
+        public HttpResponseMessage Update(SurveyQuestionUpdateRequest model, int id)
+        {
+
+            if (ModelState.IsValid)
+            {
+                _surveyQuestion.Update(model);
+                return Request.CreateResponse(new SuccessResponse());
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+        [Route("{id:int}"), HttpGet]
+        public HttpResponseMessage SelectById(int id)
+        {
+
+            if (ModelState.IsValid)
+            {
+                SurveyQuestion a = _surveyQuestion.SelectById(id);
+                ItemResponse<SurveyQuestion> response = new ItemResponse<SurveyQuestion>();
+                response.Item = a;
+                return Request.CreateResponse(response);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+        [Route("{id:int}"), HttpDelete]
+        public HttpResponseMessage Delete(int id)
+        {
+
+            if (ModelState.IsValid)
+            {
+                _surveyQuestion.Delete(id);
+                return Request.CreateResponse(new SuccessResponse());
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ModelState);
+            }
+
+        }
+
+    }
+}
