@@ -1,0 +1,194 @@
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewBag.Title = "Index";
+}
+
+@section Styles {
+    <link href="~/assets/css/survey.css" rel="stylesheet" />
+}
+
+
+<div data-ng-controller="surveyController as surveyCtrler">
+    <div class="content-heading">
+        <div class="pull-right">
+            <div class="btn-group">
+                <button type="button" data-toggle="dropdown" class="btn btn-default">English</button>
+                <ul role="menu" class="dropdown-menu dropdown-menu-right animated fadeInUpShort">
+                    <li>
+                        <a href="#" data-set-lang="en">English</a>
+                    </li>
+                    <li>
+                        <a href="#" data-set-lang="es">Spanish</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <span ng-cloak>{{surveyCtrler.headingInfo}}</span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="panel panel-dark">
+                <div class="panel-heading">
+                    All Surveys
+                </div>
+                <div class="panel-body">
+                    <div class="col-md-5 text-center">Title</div>
+                    <div class="col-md-2 text-center">Status</div>
+                    <div class="col-md-2 text-center">View/Edit</div>
+                    <div class="col-md-3 text-center">Delete</div>
+                </div>
+                <div class="panel">
+                    <div class="panel-body" ng-repeat="survey in surveyCtrler.surveys track by survey.id">
+                        <div class="col-md-5 text-center" ng-cloak>{{survey.title}}</div>
+                        <div class="col-md-2 text-center" ng-cloak>{{survey.statusName}}</div>
+                        <div class="col-md-2 text-center" ng-cloak>
+                            <button type="button" class="btn btn-sm btn-default text-center"
+                                    ng-click="surveyCtrler.selectSurvey(survey.id)">
+                                <em class="fa fa-search"></em>
+                            </button>
+                        </div>
+                        <div class="col-md-3 text-center" ng-cloak>
+                            <button type="button" class="btn btn-sm btn-danger"
+                                    data-toggle='modal'
+                                    data-target="#deleteModal"
+                                    ng-click="surveyCtrler.getSurveyId(survey.id)">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Delete Modal START -->
+                <div id="deleteModal" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title">Are you sure?</h4>
+                            </div>
+                            <div class="modal-body">
+                                <p>This survey will be <strong>permanently</strong> deleted</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" id="btn-delete-cancel" class="btn btn-default" data-dismiss="modal">
+                                    Close
+                                </button>
+                                <button type="button" class="btn btn-danger" id="btn-delete-confirm" data-dismiss="modal" ng-click="surveyCtrler.deleteSurvey()">
+                                    Yes, delete this record
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Delete Modal END -->
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <a href="/surveys/create/" type="button" class="btn btn-success">Add New Survey</a>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <script src="~/Scripts/sabio.surveys.services.js"></script>
+    <script type="text/javascript">
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                 .factory('$surveyService', SurveyServiceFactory);
+
+            SurveyServiceFactory.$inject = ['$baseService', '$sabio'];
+
+            function SurveyServiceFactory($baseService, $sabio) {
+
+                var aSabioServiceObject = sabio.surveys.services;
+
+                var newService = $baseService.merge(true, {}, aSabioServiceObject, $baseService);
+
+                console.log('survey service', aSabioServiceObject);
+
+                return newService;
+            }
+
+        })();
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                .controller('surveyController', SurveyController);
+
+            SurveyController.$inject = ['$scope', '$baseController', '$surveyService'];
+
+            function SurveyController(
+                $scope
+                , $baseController
+                , $surveyService) {
+
+                var vm = this;
+                $baseController.merge(vm, $baseController);
+                vm.$surveyService = $surveyService;
+                vm.$scope = $scope;
+                vm.notify = vm.$surveyService.getNotifier($scope);
+
+                vm.headingInfo = 'Surveys';
+                vm.surveys = {};
+                vm.surveyId = null;
+
+                vm.getSurveyId = _getSurveyId;
+                vm.onSelectAllSuccess = _onSelectAllSuccess;
+                vm.onSelectAllError = _onSelectAllError;
+                vm.selectSurvey = _selectSurvey;
+                vm.deleteSurvey = _deleteSurvey;
+                vm.onDeleteSuccess = _onDeleteSuccess;
+                vm.onDeleteError = _onDeleteError;
+
+
+                render();
+
+                function render() {
+                    vm.$surveyService.selectAll(vm.onSelectAllSuccess, vm.onSelectAllError);
+                }
+
+                function _onSelectAllSuccess(data) {
+                    vm.notify(function () {
+                        vm.surveys = data.items;
+                    });
+                }
+
+                function _onSelectAllError(jqXhr, status, error) {
+                    console.error(error);
+                }
+
+                function _getSurveyId(surveyId) {
+                    vm.surveyId = surveyId;
+                }
+
+                function _selectSurvey(id) {
+                    window.location.href = '/surveys/' + id + '/edit';
+                }
+
+                function _deleteSurvey() {
+                    vm.$surveyService.delete(vm.surveyId, vm.onDeleteSuccess, vm.onDeleteError);
+                }
+
+                function _onDeleteSuccess(data, status, xhr) {
+                    render();
+                    vm.surveyId = null;
+                    vm.$alertService.success("Survey has been deleted");
+                }
+
+                function _onDeleteError(jqXhr, status, error) {
+                    vm.$alertService.error("Delete failed");
+                }
+
+
+            }
+        })();
+
+
+
+    </script>
+}
+
