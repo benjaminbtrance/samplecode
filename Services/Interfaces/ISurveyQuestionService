@@ -1,0 +1,13 @@
+using Sabio.Web.Domain;
+using Sabio.Web.Models.Requests;
+
+namespace Sabio.Web.Services
+{
+    public interface ISurveyQuestionService
+    {
+        void Delete(int id);
+        int Insert(SurveyQuestionAddRequest model);
+        SurveyQuestion SelectById(int id);
+        void Update(SurveyQuestionUpdateRequest model);
+    }
+}
