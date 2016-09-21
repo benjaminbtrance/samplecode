@@ -1,0 +1,54 @@
+using Sabio.Web.Domain;
+using Sabio.Web.Enums;
+using Sabio.Web.Models.ViewModels;
+using Sabio.Web.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+
+namespace Sabio.Web.Controllers
+{
+    [Authorize(Roles = "Admin")]
+    [RoutePrefix("surveys")]
+    public class SurveysController : BaseController
+    {
+
+        private ISurveyService _surveys;
+
+        public SurveysController(ISurveyService surveys)
+        {
+            _surveys = surveys;
+        }
+
+        [Route(), HttpGet]
+        public ActionResult Index()
+        {
+            ListItemViewModel<Survey> model = new ListItemViewModel<Survey>();
+            model.Items = _surveys.SelectAll();
+            return View(model);
+        }
+
+        [Route("create"), Route("{id:int}/edit"), HttpGet]
+        public ActionResult Create(int id = 0)
+        {
+            ItemViewModel<int> model = new ItemViewModel<int>();
+            model.Item = id;
+
+            return View(model);
+        }
+
+        [Route("{surveyId:int}/surveyquestions/create"), Route("{surveyId:int}/surveyquestions/{id:int}/edit"), HttpGet]
+        public ActionResult Create(int surveyId, int id = 0)
+        {
+         
+            SurveyQuestionViewModel model = new SurveyQuestionViewModel();
+            model.Id = id;
+            model.SurveyId = surveyId;
+            return View("CreateQuestion", model);
+
+        }
+
+    }
+}
