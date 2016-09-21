@@ -1,0 +1,15 @@
+using System.Collections.Generic;
+using Sabio.Web.Domain;
+using Sabio.Web.Models.Requests;
+
+namespace Sabio.Web.Services
+{
+    public interface ISurveyService
+    {
+        void Delete(int id);
+        int Insert(SurveyAddRequest model);
+        List<Survey> SelectAll();
+        Survey SelectById(int id);
+        void Update(SurveyUpdateRequest model);
+    }
+}
