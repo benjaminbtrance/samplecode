@@ -1,0 +1,234 @@
+@model Sabio.Web.Models.ViewModels.SurveyQuestionViewModel
+
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewBag.Title = "CreateQuestion";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-9 page-content">
+            <div class="inner-box category-content">
+                <h2 class="title-2 uppercase"><i class="icon-home"></i><strong id="questionHeader">New Survey Question</strong> </h2>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <form class="form-horizontal" id="questionForm">
+                            <fieldset>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label" for="id">Id</label>
+                                    <div class="col-md-4">
+                                        <input id="id" name="id" class="form-control input-md" type="text" value="@Model.Id">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label" for="surveyId">surveyId</label>
+                                    <div class="col-md-4">
+                                        <input id="surveyId" name="surveyId" class="form-control input-md" type="text" value="@Model.SurveyId">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label" for="questionText">Question Text</label>
+                                    <div class="col-md-8">
+                                        <input id="questionText" name="questionText" placeholder="Input Question Text" class="form-control input-md" type="text">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label" for="questionFormatId">Question Format Id</label>
+                                    <div class="col-md-4">
+                                        <select id="questionFormatId" name="questionFormatId" class="form-control">
+                                            <option>Choose One</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label"></label>
+                                    <div class="col-md-8">
+                                        <button id="questionSubmitBtn" class="btn btn-success ">Submit</button>
+                                        <button id="questionDeleteBtn" class="btn btn-danger hidden">Delete</button>
+                                    </div>
+                                </div>
+
+                            </fieldset>
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="confirmModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h2 class="title-2 uppercase">
+                    <strong><i class="icon-cancel-circled"></i>Do You Really Want To Delete This Question?</strong>
+                </h2>
+            </div>
+            <div class="modal-body">
+                <p>Press CONFIRM DELETE to continue delete the question.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <a role="button" class="btn btn-danger" id="confirmDelete">Confirm Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script src="~/Scripts/sabio.surveyquestions.services.js"></script>
+    <script src="~/Scripts/jquery.validate.js"></script>
+    <script type="text/javascript">
+
+        sabio.page.startUp = function () {
+
+            sabio.page.initializeValidation();
+
+            if (!($("#id").val() == false)) {
+                sabio.page.handlers.questionSelect();
+                sabio.page.handlers.change();
+            };
+
+            $("#questionSubmitBtn").on("click", sabio.page.handlers.onQuestionFormSubmit);
+            $("#questionDeleteBtn").on("click", sabio.page.handlers.showModal);
+            $("#confirmDelete").on("click", sabio.page.handlers.questionDelete);
+
+        };
+
+        sabio.page.initializeValidation = function () {
+            //  set defaults for the entire plugin
+            jQuery.validator.setDefaults({
+                debug: true
+            });
+
+            //  set rules and error messages
+            $("#questionForm").validate({
+                rules: {
+                    "questionText": {
+                        required: true,
+                        maxlength: 200
+                    },
+                    "questionFormatId": {
+                        required: true
+                    }
+
+                },
+
+                messages: {
+                    "questionText": {
+                        required: "Survey question input is required.",
+                        maxlength: "Reached max length (200)"
+                    },
+                    "questionFormatId": {
+                        required: "Survey status id input is required."
+                    }
+
+                }
+            });
+        };
+
+        sabio.page.handlers.onQuestionFormSubmit = function () {
+
+            if ($("#questionForm").valid()) {
+
+                if ($("#id").val() > 0) {
+                    sabio.page.handlers.questionUpdate();
+                }
+                else {
+                    sabio.page.handlers.questionInsert();
+                    sabio.page.handlers.change();
+                }
+
+            }
+        };
+
+        sabio.page.handlers.showModal = function () {
+            $("#confirmModal").modal("show");
+        }
+
+        sabio.page.handlers.change = function () {
+            $("#questionDeleteBtn").removeClass("hidden");
+            $("#questionHeader").text("Edit Question");
+            $("#questionSubmitBtn").text("Update");
+        }
+
+
+        sabio.page.handlers.questionInsert = function () {
+            var myData = $("#questionForm").serialize();
+            sabio.surveyquestions.services.insert(myData, sabio.page.questionInsertSuccess, sabio.page.questionInsertError);
+        }
+
+        sabio.page.questionInsertSuccess = function (data, status, xhr) {
+            var surveyId = $("#surveyId").val();
+            window.location.href = "/surveys/" + surveyId + "/edit";
+            console.log("Question Insert Success");
+        }
+
+
+        sabio.page.questionInsertError = function (jqXHR, textStatus, errorThrown) {
+            console.log("Question Insert Failed");
+        }
+
+        sabio.page.handlers.questionUpdate = function () {
+            var id = ($("#id").val());
+            var myData = $("#questionForm").serialize();
+            sabio.surveyquestions.services.update(myData, id, sabio.page.questionUpdateSuccess, sabio.page.questionUpdateError);
+        }
+
+        sabio.page.questionUpdateSuccess = function (data, status, xhr) {
+            console.log("Question Update Success");
+        }
+
+        sabio.page.questionUpdateError = function (jqXHR, textStatus, errorThrown) {
+            console.log("Question Update Failed");
+        }
+
+        sabio.page.handlers.questionSelect = function () {
+            var id = ($("#id").val());
+            sabio.surveyquestions.services.select(id, sabio.page.questionSelectSuccess, sabio.page.questionSelectError);
+        }
+
+        sabio.page.questionSelectSuccess = function (data, status, xhr) {
+            $("#id").val(data.item.id);
+            $("#surveyId").val(data.item.surveyId);
+            $("#questionText").val(data.item.questionText);
+            $("#questionFormatId").val(data.item.questionFormatId);
+            console.log("Question Select Success");
+        }
+
+        sabio.page.surveySelectError = function (jqXHR, textStatus, errorThrown) {
+            console.log("Question Select Failed");
+        }
+
+        sabio.page.handlers.questionDelete = function () {
+            var id = ($("#id").val());
+            sabio.surveyquestions.services.delete(id, sabio.page.questionDeleteSuccess, sabio.page.questionDeleteError);
+        }
+
+        sabio.page.questionDeleteSuccess = function (data, status, xhr) {
+            var surveyId = ($("#surveyId").val());
+            window.location.href = "/surveys/" + surveyId + "/edit";
+            console.log("Question Delete Success");
+        }
+
+        sabio.page.questionDeleteError = function (jqXHR, textStatus, errorThrown) {
+            console.log("Survey Delete Failed");
+        }
+
+
+    </script>
+}
