@@ -1,0 +1,22 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace Sabio.Web.Domain
+{
+    public class Survey
+    {
+
+        public int Id { get; set; }
+
+        public string Title { get; set; }
+            
+        public int StatusId { get; set; }
+
+        public string StatusName { get; set; }
+
+        public List<SurveyQuestion> Questions { get; set; }
+
+    }
+}
