@@ -1,0 +1,608 @@
+@model Sabio.Web.Models.ViewModels.ItemViewModel<int>
+
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewBag.Title = "Create";
+}
+
+@section Styles {
+    <link href="~/assets/css/survey.css" rel="stylesheet" />
+}
+
+<div ng-controller="surveyController as surveyCtrler">
+    <div class="content-heading">
+        <div class="pull-right">
+            <div class="btn-group">
+                <button type="button" data-toggle="dropdown" class="btn btn-default">English</button>
+                <ul role="menu" class="dropdown-menu dropdown-menu-right animated fadeInUpShort">
+                    <li>
+                        <a href="#" data-set-lang="en">English</a>
+                    </li>
+                    <li>
+                        <a href="#" data-set-lang="es">Spanish</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <span ng-cloak>{{surveyCtrler.headingInfo}}</span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="panel panel-dark">
+
+                <div class="panel-heading">
+                    Survey
+                </div>
+
+                @* survey form *@
+                <div class="panel-body">
+                    <form class="form-horizontal" id="surveyForm" name="surveyCtrler.surveyForm" novalidate>
+
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="control-label">Title</label>
+                                <div>
+                                    <input name="title" placeholder="Input Title" type="text"
+                                           class="form-control ng-class:{'error': surveyCtrler.surveyForm.title.$dirty && !surveyCtrler.surveyForm.title.$valid}"
+                                           ng-model="surveyCtrler.survey.title"
+                                           ng-maxlength="100"
+                                           required />
+                                    <div role="alert" class="help-inline error">
+                                        <span class="error" ng-cloak ng-show="surveyCtrler.surveyForm.title.$dirty && surveyCtrler.surveyForm.title.$error.required">Survey Title is required</span>
+                                        <span class="error" ng-cloak ng-show="surveyCtrler.surveyForm.title.$dirty && surveyCtrler.surveyForm.title.$error.maxlength">Survey Title must be 100 characters or less</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* status dropdown *@
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="control-label" for="statusId">Status</label>
+                                <div class="row col-md-12">
+                                    <div class="row col-md-6">
+                                        <select id="statusId" name="statusId"
+                                                class="form-control ng-class:{'error': surveyCtrler.surveyForm.statusId.$dirty && !surveyCtrler.surveyForm.statusId.$valid}"
+                                                ng-model="surveyCtrler.survey.statusId"
+                                                ng-init="surveyCtrler.survey.statusId = surveyCtrler.$sabio.surveyStatuses.Unspecified"
+                                                ng-options="key for (key , value) in surveyCtrler.$sabio.surveyStatuses track by value"
+                                                required></select>
+                                    </div>
+                                </div>
+                                <div role="alert" class="help-inline error">
+                                    <span class="error" ng-show="surveyCtrler.surveyForm.statusId.$dirty && surveyCtrler.surveyForm.statusId.$error.required"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group" ng-show="surveyCtrler.survey.id == null">
+                                <span ng-cloak>{{surveyCtrler.newSurveyInfo}}</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group">
+
+                                <div class="row col-md-3" ng-cloak>
+                                    <input class="btn btn-success"
+                                           type="button"                                                                                      
+                                           ng-value="surveyCtrler.survey.id == null ? 'Create' : 'Update Survey'"
+                                           ng-click="surveyCtrler.survey.id == null ? surveyCtrler.insertSurvey() : surveyCtrler.updateSurvey()" />
+                                </div>
+
+                                <div class="col-md-1"></div>
+
+                                <div class="row col-md-3" ng-cloak>
+                                    <input class="btn btn-warning"
+                                           type="button"                                                             
+                                           ng-value="surveyCtrler.survey.id == null ? 'Cancel' : 'View All Surveys'"
+                                           ng-click="surveyCtrler.onListOfSurveys()" />
+                                </div>
+
+                                <div class="row col-md-2"></div>
+
+                                <div class="row col-md-3" ng-cloak>
+                                    <button type="button" class="btn btn-danger"                                 
+                                            ng-show="surveyCtrler.survey.id != null"
+                                            data-toggle='modal'                                  
+                                            data-target="#deleteSurvey">
+                                        Delete
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Survey Modal START -->
+        <div id="deleteSurvey" class="modal fade" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Are you sure?</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>This survey will be <strong>permanently</strong> deleted</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="btn-delete-cancel" class="btn btn-default" data-dismiss="modal">
+                            Close
+                        </button>
+                        <button type="button" class="btn btn-danger" id="btn-delete-confirm" data-dismiss='modal' ng-click="surveyCtrler.deleteSurvey()">
+                            Yes, delete this record
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Delete Modal END -->
+        @* add question button *@
+        <div class="col-md-6">
+            
+            <div ng-include="'/scripts/app/admin/questionForm.html'" ng-show="surveyCtrler.isQuestionFormVisible"></div>
+
+            <button class="col-md-12 btn btn-success"
+                    ng-cloak
+                    ng-show="!surveyCtrler.isQuestionFormVisible && surveyCtrler.survey.id != null"
+                    ng-click="surveyCtrler.showQuestionForm()">
+                Click to add question
+            </button>
+
+        </div>
+      
+                    
+        @* list of questions *@
+        <div class="col-md-12" ng-show="surveyCtrler.survey.questions.length" ng-cloak>
+            <div class="panel panel-dark">
+
+                <div class="panel-heading">
+                    List of questions
+                </div>
+
+                <div class="panel-body">
+                    <div class="col-md-5 text-center">Title</div>
+                    <div class="col-md-2 text-center">Format</div>
+                    <div class="col-md-2 text-center">View/Edit</div>
+                    <div class="col-md-3 text-center">Delete</div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-body" ng-repeat="question in surveyCtrler.survey.questions track by $index">
+                        <div class="col-md-5 text-center">{{question.questionText}}</div>
+                        <div class="col-md-2 text-center">{{question.questionFormatId | questionFormat}}</div>
+                        <div class="col-md-2 text-center">
+                            <button type="button"
+                                    class="btn btn-sm btn-default text-center"
+                                    ng-click="surveyCtrler.selectQuestion(question)">
+                                <em class="fa fa-search"></em>
+                            </button>
+                        </div>
+
+                        <div class="col-md-3 text-center">
+                            <button type="button" class="btn btn-sm btn-danger"
+                                    data-toggle='modal'
+                                    data-target="#deleteQuestion"
+                                    ng-click="surveyCtrler.getQuestionId(question.id)">
+                                Delete
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Delete Question Modal START -->
+                    <div id="deleteQuestion" class="modal fade" role="dialog">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <h4 class="modal-title">Are you sure?</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p>This question will be <strong>permanently</strong> deleted</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" id="btn-delete-cancel" class="btn btn-default" data-dismiss="modal">
+                                        Close
+                                    </button>
+                                    <button type="button" class="btn btn-danger" id="btn-delete-confirm" data-dismiss='modal' ng-click="surveyCtrler.deleteQuestion()">
+                                        Yes, delete this record
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Delete Question Modal END -->
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+    @*end of controller*@
+</div>
+
+
+
+
+@* question form *@
+<script type="text/ng-template" id="/scripts/app/admin/questionForm.html">
+    <div class="panel panel-dark">
+
+        <div class="panel-heading">
+            Question
+        </div>
+
+        <div class="panel-body">
+            <form class="form-horizontal" id="questionForm" name="surveyCtrler.questionForm" novalidate>
+
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label class="control-label">Question</label>
+                        <div>
+                            <input name="questionText" placeholder="Input Question" type="text"
+                                   class="form-control ng-class:{'error': surveyCtrler.questionForm.questionText.$dirty && !surveyCtrler.questionForm.questionText.$valid}"
+                                   ng-model="surveyCtrler.question.questionText"
+                                   ng-maxlength="200"
+                                   required>
+                            <div role="alert" class="help-inline error">
+                                <span class="error" ng-show="surveyCtrler.questionForm.questionText.$dirty && surveyCtrler.questionForm.questionText.$error.required">Question text is required</span>
+                                <span class="error" ng-show="surveyCtrler.questionForm.questionText.$dirty && surveyCtrler.questionForm.questionText.$error.maxlength">Question must be 200 characters or less</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* format drop down *@
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label class="control-label">Question Format</label>
+                        <div class="row col-md-12">
+                            <div class="row col-md-6">
+                                <select name="questionFormatId"
+                                        class="form-control ng-class:{'error': surveyCtrler.questionForm.questionFormatId.$dirty && !surveyCtrler.questionForm.questionFormatId.$valid}"
+                                        ng-model="surveyCtrler.question.questionFormatId"
+                                        ng-options="key for (key , value) in surveyCtrler.$sabio.questionFormats track by value"
+                                        required></select>
+                            </div>
+                        </div>
+                        <div role="alert" class="help-inline error">
+                            <span class="error" ng-show="surveyCtrler.questionForm.questionFormatId.$dirty && surveyCtrler.questionForm.questionFormatId.$error.required"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="form-group">
+
+                        <div class="row col-md-3" ng-cloak>
+                            <input class="btn btn-success"
+                                   type="button"              
+                                   ng-value="surveyCtrler.question.id == null ? 'Create Question' : 'Update Question'"
+                                   ng-click="surveyCtrler.question.id == null ? surveyCtrler.insertQuestion() : surveyCtrler.updateQuestion()" />
+                        </div>
+
+                        <div class="col-md-1"></div>
+
+                        <div class="row col-md-3" ng-cloak>
+                            <button type="button"
+                                    class="btn btn-warning"
+                                    ng-click="surveyCtrler.cancelForm()">
+                                Cancel
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+
+            </form>
+        </div>
+
+    </div>
+</script>
+
+
+@section Scripts {
+    <script src="~/Scripts/sabio.surveys.services.js"></script>
+    <script src="~/Scripts/sabio.surveyquestions.services.js"></script>
+    <script type="text/javascript">
+
+        sabio.page.surveyId = @Model.Item;
+
+        sabio.page.surveyStatuses = { "Unspecified": 0, "Draft": 1, "Published": 2, "Obsolete": 3 };
+
+        sabio.page.questionFormats = { "Text": 0, "Rating": 1 };
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                 .factory('$surveyService', SurveyServiceFactory);
+
+            SurveyServiceFactory.$inject = ['$baseService', '$sabio'];
+
+            function SurveyServiceFactory($baseService, $sabio) {
+
+                var aSabioServiceObject = sabio.surveys.services;
+
+                var newService = $baseService.merge(true, {}, aSabioServiceObject, $baseService);
+
+                console.log('survey service', aSabioServiceObject);
+
+                return newService;
+            }
+
+        })();//End of surveyService
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                 .factory('$questionService', QuestionServiceFactory);
+
+            QuestionServiceFactory.$inject = ['$baseService', '$sabio'];
+
+            function QuestionServiceFactory($baseService, $sabio) {
+
+                var aSabioServiceObject = sabio.surveyquestions.services;
+
+                var newService = $baseService.merge(true, {}, aSabioServiceObject, $baseService);
+
+                console.log('question service', aSabioServiceObject);
+
+                return newService;
+            }
+
+        })();//End of questionService
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+                .controller('surveyController', SurveyController);
+
+            SurveyController.$inject = ['$scope', '$baseController', '$surveyService', '$questionService'];
+
+            function SurveyController(
+                $scope,
+                $baseController,
+                $surveyService,
+                $questionService) {
+
+                var vm = this;
+                $baseController.merge(vm, $baseController);
+                vm.$surveyService = $surveyService;
+                vm.$questionService = $questionService;
+                vm.$scope = $scope;
+                vm.notify = vm.$surveyService.getNotifier($scope);
+
+                vm.headingInfo = 'Create New Survey';
+                vm.newSurveyInfo = '*Create survey before adding questions*';
+                vm.survey = {};
+                vm.survey.questions = [];
+                vm.question = {};
+                vm.questionId = null;
+                vm.surveyForm = null;
+                vm.questionForm = null;
+                vm.isQuestionFormVisible = false;
+
+                vm.cancelForm = _cancelForm;
+                vm.onListOfSurveys = _onListOfSurveys;
+                vm.getQuestionId = _getQuestionId;
+                vm.insertSurvey = _insertSurvey;
+                vm.onInsertSuccess = _onInsertSuccess;
+                vm.onInsertError = _onInsertError;
+                vm.updateSurvey = _updateSurvey;
+                vm.onUpdateSuccess = _onUpdateSuccess;
+                vm.onUpdateError = _onUpdateError;
+                vm.onSelectSuccess = _onSelectSuccess;
+                vm.onSelectError = _onSelectError;
+                vm.deleteSurvey = _deleteSurvey;
+                vm.onDeleteSuccess = _onDeleteSuccess;
+                vm.onDeleteError = _onDeleteError;
+                vm.showQuestionForm = _showQuestionForm;
+                vm.insertQuestion = _insertQuestion;
+                vm.onInsertQuestionSuccess = _onInsertQuestionSuccess;
+                vm.onInsertQuestionError = _onInsertQuestionError;
+                vm.updateQuestion = _updateQuestion;
+                vm.onUpdateQuestionSuccess = _onUpdateQuestionSuccess;
+                vm.onUpdateQuestionError = _onUpdateQuestionError;
+                vm.selectQuestion = _selectQuestion;
+                vm.deleteQuestion = _deleteQuestion;
+                vm.onDeleteQuestionSuccess = _onDeleteQuestionSuccess;
+                vm.onDeleteQuestionError = _onDeleteQuestionError;
+
+                render();
+
+                function render() {
+ 
+                    if (vm.$sabio.surveyId != 0){
+                        vm.$surveyService.selectById(vm.$sabio.surveyId, vm.onSelectSuccess, vm.onSelectError);
+                    }
+
+                }
+
+                function _cancelForm() {
+                    vm.question = {questionFormatId: 0};
+                    vm.questionForm.$setPristine();
+                    vm.questionForm.$setUntouched();
+                    vm.isQuestionFormVisible = false;
+
+                }
+
+                function _onListOfSurveys() {
+                    window.location.href = '/surveys/';
+                }
+
+                function _getQuestionId(questionId) {
+                    vm.questionId = questionId;
+                }
+
+                function _onSelectSuccess(data, status, xhr) {
+                    vm.notify(function () {
+                        vm.survey = data.item;
+
+                        if (vm.survey.id > 0) {
+                            vm.headingInfo = 'View/Edit Survey';
+                        }
+                    });
+                    console.log(status);
+                }
+
+                function _onSelectError(jqXhr, status, error) {
+                    console.error(error);
+                }
+
+
+                function _insertSurvey() {
+                    if (vm.surveyForm.$valid) {
+                        vm.$surveyService.insert(vm.survey, vm.onInsertSuccess, vm.onInsertError);
+                    }
+                    else {
+                        vm.$alertService.error("Invalid data, please check your entries and try again...","Incorrect Input");
+                    }
+                }
+
+                function _onInsertSuccess(data, status, xhr) {
+                    vm.notify(function () {
+                        vm.survey.id = data.item;
+                        vm.$sabio.surveyId = data.item;
+                    });
+
+                    vm.$alertService.success("New survey created");
+                }
+
+                function _onInsertError(jqXhr, status, error) {
+                    console.error(error);
+                }
+
+                function _updateSurvey() {
+                    vm.$surveyService.update(vm.survey, vm.survey.id, vm.onUpdateSuccess, vm.onUpdateError);
+                }
+
+                function _onUpdateSuccess(data, status, xhr) {
+                    vm.$alertService.success("Survey has been updated");
+                }
+
+                function _onUpdateError(jqXhr, status, error) {
+                    vm.$alertService.error("Update failed");
+                }
+
+                function _deleteSurvey() {
+                    vm.$surveyService.delete(vm.survey.id, vm.onDeleteSuccess, vm.onDeleteError);
+                }
+
+                function _onDeleteSuccess(data, status, xhr) {
+                    window.location.href = '/surveys/';
+                }
+
+                function _onDeleteError(jqXhr, status, error) {
+                    console.error(error);
+                }
+
+                function _showQuestionForm() {
+                    vm.question = {questionFormatId: 0};
+                    vm.isQuestionFormVisible = true;
+                }
+
+                function _insertQuestion() {
+
+                    if (vm.questionForm.$valid) {
+                        vm.question.surveyId = vm.survey.id
+                        vm.$questionService.insert(vm.question, vm.onInsertQuestionSuccess, vm.onInsertQuestionError);
+                    }
+                    else {
+                        vm.$alertService.error("Invalid data, please check your entries and try again...","Incorrect Input");
+                    };
+
+                }
+
+                function _onInsertQuestionSuccess(data, status, xhr) {
+
+                    vm.notify(function () {
+
+                        if(vm.survey.questions == null){
+                            vm.survey.questions = [];
+                        }
+
+                        vm.question.id = data.item;
+                        vm.survey.questions.push(vm.question);
+                        vm.question = {questionFormatId: 0};
+                        vm.questionForm.$setPristine();
+                        vm.questionForm.$setUntouched();
+                    });
+
+                    vm.$alertService.success("New question created");
+                }
+
+                function _onInsertQuestionError(jqXhr, status, error) {
+                    console.error(error);
+                }
+
+                function _updateQuestion() {
+                    vm.$questionService.update(vm.question, vm.question.id, _onUpdateQuestionSuccess, _onUpdateQuestionError);
+                }
+
+                function _onUpdateQuestionSuccess(data, status, xhr) {
+                    vm.$alertService.success("Question has been updated");
+                }
+
+                function _onUpdateQuestionError(jqXhr, status, error) {
+                    vm.$alertService.error("Update failed");
+                }
+
+                function _selectQuestion(selectedQuestion) {
+                    vm.showQuestionForm();
+                    vm.question = selectedQuestion;
+
+                }
+
+
+                function _deleteQuestion() {
+                    vm.$questionService.delete(vm.questionId, vm.onDeleteQuestionSuccess, vm.onDeleteQuestionError);
+                }
+
+                function _onDeleteQuestionSuccess(data, status, xhr) {
+                    if (vm.isQuestionFormVisible == true) {
+                        vm.isQuestionFormVisible = false;
+                    }
+
+                    render();
+                    vm.$alertService.success("Question has been deleted");
+                }
+
+                function _onDeleteQuestionError(jqXhr, status, error) {
+                    vm.$alertService.error("Delete failed");
+                }
+
+
+            }//End of SurveyController Function
+
+
+            //questionFormatId Filter
+            angular.module(APPNAME).filter('questionFormat', function () {
+                return function (questionFormat) {
+
+                    switch(questionFormat){
+                        case 0:
+                            return 'Text';
+                        case 1:
+                            return 'Rating';           
+                    }
+                };
+            });
+
+
+        })();//End of surveyController
+
+
+    </script>
+}
