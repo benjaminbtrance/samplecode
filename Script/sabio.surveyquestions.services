@@ -1,0 +1,57 @@
+if (!sabio.surveyquestions) {
+	sabio.surveyquestions = { services: {} };
+}
+
+sabio.surveyquestions.services.insert = function (myData, onSuccess, onError) {
+	var url = "/api/surveyquestions";
+	var settings = {
+		cache: false
+		, contentType: "application/json; charset=UTF-8"
+		, data: JSON.stringify(myData)
+		, dataType: "json"
+		, success: onSuccess
+		, error: onError
+		, type: "POST"
+	};
+	$.ajax(url, settings);
+}
+
+sabio.surveyquestions.services.update = function (myData, id, onSuccess, onError) {
+    var url = "/api/surveyquestions/" + id;
+    var settings = {
+        cache: false
+		, contentType: "application/x-www-form-urlencoded; charset=UTF-8"
+		, data: myData
+		, dataType: "json"
+		, success: onSuccess
+		, error: onError
+		, type: "PUT"
+    };
+    $.ajax(url, settings);
+}
+
+sabio.surveyquestions.services.select = function (id, onSuccess, onError) {
+    var url = "/api/surveyquestions/" + id;
+    var settings = {
+        cache: false
+        , contentType: "application/x-www-form-urlencoded; charset=UTF-8"
+        , dataType: "json"
+        , success: onSuccess
+        , error: onError
+        , type: "GET"
+    };
+    $.ajax(url, settings);
+}
+
+sabio.surveyquestions.services.delete = function (id, onSuccess, onError) {
+    var url = "/api/surveyquestions/" + id;
+    var settings = {
+        cache: false
+		, contentType: "application/x-www-form-urlencoded; charset=UTF-8"
+		, dataType: "json"
+		, success: onSuccess
+		, error: onError
+		, type: "DELETE"
+    };
+    $.ajax(url, settings);
+}
